@@ -17,6 +17,9 @@ void inn_ROIPooling_updateOutput(THCState *state,
 void inn_ROIPooling_updateOutputV2(THCState *state,
     THCudaTensor *output, THCudaTensor *indices,
     THCudaTensor *data, THCudaTensor* rois, int W, int H, double spatial_scale);
+void inn_ROIPooling_updateOutputV3(THCState *state,
+    THCudaTensor *output, THCudaTensor *indices,
+    THCudaTensor *data, THCudaTensor* rois, int W, int H, double spatial_scale);
 void inn_ROIPooling_updateGradInputAtomic(THCState *state,
     THCudaTensor *gradInput, THCudaTensor *indices, THCudaTensor *data,
     THCudaTensor *gradOutput, THCudaTensor* rois, int W, int H, double spatial_scale);

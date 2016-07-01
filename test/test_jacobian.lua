@@ -135,7 +135,7 @@ function randROI(sz, n)
   return roi
 end
 
-function testJacobianWithRandomROI(cls, v2)
+function testJacobianWithRandomROI(cls, version)
   --pooling grid size
   local w=4; 
   local h=4;
@@ -152,9 +152,9 @@ function testJacobianWithRandomROI(cls, v2)
     local input = torch.rand(batchSize, 1, H, W);
     local roi = randROI(input:size(), numRoi)
     local module = cls.new(w, h, 1, roi)
-    module.v2 = v2
+    module.version = version 
     local err = jac.testJacobian(module, input, nil, nil, 1e-3)
-    mytester:assertlt(err, precision, 'error on ROIPooling '..(v2 and 'v2' or 'v1'))
+    mytester:assertlt(err, precision, 'error on ROIPooling '.. version)
   end
 end
 
@@ -173,7 +173,48 @@ function inntest.ROIPooling()
     return parent.updateGradInput(self,{input:cuda(), self.roi}, gradOutput)[1]
   end
 
-  testJacobianWithRandomROI(FixedROIPooling, true)
+  testJacobianWithRandomROI(FixedROIPooling, 'v2')
+end
+
+function testJacobianWithRandomROIForV3(cls, version)
+  --pooling grid size
+  local w=4;
+  local h=4;
+  --input size
+  local W=w*2;
+  local H=h*2;
+
+  local batchSize = 3
+  local numRoi = batchSize
+  local numRepeat = 3
+
+  torch.manualSeed(0)
+  for i=1,numRepeat do
+    local input = torch.rand(batchSize, 1, H, W);
+    local roi = randROI(input:size(), numRoi)
+    local module = cls.new(w, h, 1, roi)
+    module.version = version
+    local err = jac.testJacobian(module, input, nil, nil, 1e-3)
+    mytester:assertlt(err, precision, 'error on ROIPooling '.. version)
+  end
+end
+
+function inntest.ROIPoolingV3()
+  local FixedROIPoolingV3, parent = torch.class('FixedROIPoolingV3', 'inn.ROIPooling')
+  function FixedROIPoolingV3:__init(W, H, s, roi)
+    self.roi = roi
+    parent.__init(self, W, H, s)
+    self:cuda()
+  end
+
+  function FixedROIPoolingV3:updateOutput(input)
+    return parent.updateOutput(self,{input:cuda(), self.roi})
+  end
+  function FixedROIPoolingV3:updateGradInput(input, gradOutput)
+    return parent.updateGradInput(self,{input:cuda(), self.roi}, gradOutput)[1]
+  end
+
+  testJacobianWithRandomROIForV3(FixedROIPoolingV3, 'v3')
 end
 
 function testJacobianWithRandomROIForROIWarpingData(cls)

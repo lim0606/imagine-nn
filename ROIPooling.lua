@@ -9,7 +9,7 @@ function ROIPooling:__init(W,H,spatial_scale)
   self.spatial_scale = spatial_scale or 1
   self.gradInput = {}
   self.indices = torch.Tensor()
-  self.v2 = true
+  self.version = 'v2'
 end
 
 function ROIPooling:setSpatialScale(scale)
@@ -18,12 +18,17 @@ function ROIPooling:setSpatialScale(scale)
 end
 
 function ROIPooling:updateOutput(input)
+  assert(self.version == 'v1' or self.version == 'v2' or self.version == 'v3', 'This implementation of ROIPooling has only three different version: v1 | v2 | v3')
   assert(#input == 2)
   local data = input[1]
   local rois = input[2]
 
-  if self.v2 then
+  if self.version == 'v2' then
     C.inn_ROIPooling_updateOutputV2(cutorch.getState(),
+      self.output:cdata(), self.indices:cdata(), data:cdata(), rois:cdata(),
+      self.W, self.H, self.spatial_scale)
+  elseif self.version == 'v3' then 
+    C.inn_ROIPooling_updateOutputV3(cutorch.getState(),
       self.output:cdata(), self.indices:cdata(), data:cdata(), rois:cdata(),
       self.W, self.H, self.spatial_scale)
   else
@@ -35,6 +40,7 @@ function ROIPooling:updateOutput(input)
 end
 
 function ROIPooling:updateGradInput(input,gradOutput)
+  assert(self.version == 'v1' or self.version == 'v2' or self.version == 'v3', 'This implementation of ROIPooling has only three different version: v1 | v2 | v3')
   local data = input[1]
   local rois = input[2]
 
